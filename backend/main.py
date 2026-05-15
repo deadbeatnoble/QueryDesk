@@ -2,10 +2,13 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from database import Base, engine, SessionLocal
 from models.document import Document
-from utils.llm_service import generate_answer
+
+from utils.llm_service import generate_answer_with_llm
+from utils.ai_service import generate_answer_with_ai
 
 from services.ingestion_service import ingest_document
 from services.retrieve_relevant_chunks import retrieve_relevant_chunks
+from services.retrieve_relevant_chunks import retrieve_relevant_chunks_per_document
 
 from fastapi import UploadFile, File
 from dotenv import load_dotenv
@@ -31,19 +34,6 @@ def get_documents():
 
     return documents
 
-@app.delete("/documents/{document_id}")
-def delete_document(document_id: int):
-    db = SessionLocal()
-    doc = db.query(Document).filter(Document.id == document_id).first()
-
-    if not doc:
-        return {"message": "Document not found"}
-
-    db.delete(doc)
-    db.commit()
-
-    return {"message": "Document deleted"}
-
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     db = SessionLocal()
@@ -64,7 +54,32 @@ def ask_question(payload: dict):
         [c["content"] for c in top_chunks]
     )
 
-    answer = generate_answer(
+    answer = generate_answer_with_llm(
+        payload["question"],
+        context
+    )
+
+    return {
+        "answer": answer,
+        "source": top_chunks
+    }
+
+
+@app.post("/ask-document")
+def ask_question_per_document(payload: dict):
+    db= SessionLocal()
+
+    top_chunks = retrieve_relevant_chunks_per_document(
+        payload["question"],
+        db,
+        document_id=payload["document_id"]
+    )
+
+    context = "\n\n".join(
+        [c["content"] for c in top_chunks]
+    )
+
+    answer = generate_answer_with_llm(
         payload["question"],
         context
     )

@@ -1,6 +1,6 @@
 import ollama
 
-def generate_answer(question, context):
+def generate_answer_with_llm(question, context):
     response = ollama.chat(
         model = "llama3.2:3b",
         messages = [

@@ -24,3 +24,25 @@ def retrieve_relevant_chunks(question, db):
     top_chunks = results[:3]
 
     return top_chunks
+
+def retrieve_relevant_chunks_per_document(question, db, document_id):
+    question_vector = get_embeddings(question)
+
+    chunks = db.query(DocumentChunk).filter(DocumentChunk.document_id == document_id).all()
+
+    results = []
+
+    for chunk in chunks:
+        chunk_vector = eval(chunk.embedding)
+        score = cosine_similarity(question_vector, chunk_vector)
+
+        results.append({
+            "content": chunk.content,
+            "score": score
+        })
+
+    results = sorted(results, key=lambda x: x["score"], reverse=True)
+
+    top_chunks = results[:3]
+
+    return top_chunks
