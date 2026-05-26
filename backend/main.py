@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from database import Base, engine, SessionLocal
 from models.document import Document
+from fastapi.responses import StreamingResponse
 
 from utils.llm_service import generate_answer_with_llm
 from utils.ai_service import generate_answer_with_ai
@@ -54,16 +55,15 @@ def ask_question(payload: dict):
         [c["content"] for c in top_chunks]
     )
 
-    answer = generate_answer_with_llm(
+    stream = generate_answer_with_llm(
         payload["question"],
         context
     )
 
-    return {
-        "answer": answer,
-        "source": top_chunks
-    }
-
+    return StreamingResponse(
+        stream,
+        media_type="text/plain"
+    )
 
 @app.post("/ask-document")
 def ask_question_per_document(payload: dict):

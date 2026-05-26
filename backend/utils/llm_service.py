@@ -17,7 +17,13 @@ def generate_answer_with_llm(question, context):
                 {question}
 """
             }
-        ]
+        ],
+        stream=True
     )
 
-    return response["message"]["content"]
+    for chunk in response:
+        content = chunk["message"]["content"]
+
+        if content:
+            print(content, end="", flush=True)
+            yield content
