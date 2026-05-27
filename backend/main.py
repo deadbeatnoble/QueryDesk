@@ -79,12 +79,12 @@ def ask_question_per_document(payload: dict):
         [c["content"] for c in top_chunks]
     )
 
-    answer = generate_answer_with_llm(
+    stream = generate_answer_with_llm(
         payload["question"],
         context
     )
 
-    return {
-        "answer": answer,
-        "source": top_chunks
-    }
+    return StreamingResponse(
+        stream,
+        media_type="text/plain"
+    )
